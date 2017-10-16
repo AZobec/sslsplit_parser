@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#################################################
+#						#
+#		But du script :			#
+#	récupérer un max de datas à stocker	#
+#	On prend les requêtes :			#
+#	POST,GET with JS,EXE,.ZIP,.tar.gz	#
+#						#
+#################################################
+
+SSLSPLIT_LOG_PATH=/tmp/sslsplit/logdir
+SSLSPLIT_LOGROTATE=/tmp/sslsplit/logrotate
+
+
+array=($(ls /tmp/sslsplit/logdir))
+for ((i=0; i<${#array[@]}; i++))
+	do
+		echo ${array[$i]} >> $SSLSPLIT_LOGROTATE/TEMP_LIST.txt
+	done
+
+#  Récupérer tous les files dont la premiere ligne commence par POST
+awk 'FNR==1{if ($0~"POST") print FILENAME;}' /tmp/sslsplit/logdir/*.log > $SSLSPLIT_LOGROTATE/POST_DATAS.files
+
+array=($(cat $SSLSPLIT_LOGROTATE/POST_DATAS.files))
+for ((i=0; i<${#array[@]}; i++))
+	        do
+			FILENAME_TIME=$(echo ${array[$i]} | awk -F "/" '{print $5}' | awk -F "-" '{print $1}')
+			FILENAME=$(echo ${array[$i]} | awk -F "/" '{print $5}')
+			head -n 2 ${array[$i]} | tr '\r\n' ' ' | awk '{OFS ="\";\""} {print "\"""'$FILENAME_TIME'",$1,$5,$2,"'$FILENAME'""\""}' >> $SSLSPLIT_LOGROTATE/POST_DATAS.log
+		done
+
+rm -rf $SSLSPLIT_LOGROTATE/TEMP_LIST.txt
